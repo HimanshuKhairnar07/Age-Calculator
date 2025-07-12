@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Age Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      width: 360px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    input[type="date"] {
+      padding: 10px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+    }
+
+    button {
+      padding: 10px 18px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background-color: #4caf50;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    #result {
+      font-size: 16px;
+      margin-top: 15px;
+    }
+
+    .progress-container {
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    .progress-bar {
+      height: 12px;
+      background: #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #4caf50;
+      width: 0%;
+      transition: width 1s ease-in-out;
+    }
+
+    .info {
+      font-size: 14px;
+      color: #444;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎂 Age Calculator</h1>
+    <input type="date" id="birthdate" />
+    <br />
+    <button onclick="calculateAge()">Calculate Age</button>
+    <div id="result"></div>
+    <div id="extraInfo" class="info"></div>
+    <div class="progress-container">
+      <div>🎯 Progress to next birthday:</div>
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function calculateAge() {
+      const input = document.getElementById("birthdate").value;
+      const result = document.getElementById("result");
+      const extraInfo = document.getElementById("extraInfo");
+      const progressFill = document.getElementById("progress-fill");
+
+      if (!input) {
+        result.textContent = "⚠️ Please select your birth date.";
+        return;
+      }
+
+      const today = new Date();
+      const birthDate = new Date(input);
+      const birthDay = birthDate.getDate();
+      const birthMonth = birthDate.getMonth();
+      const birthYear = birthDate.getFullYear();
+
+      let years = today.getFullYear() - birthYear;
+      let months = today.getMonth() - birthMonth;
+      let days = today.getDate() - birthDay;
+
+      if (days < 0) {
+        months--;
+        days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+      }
+
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+
+      result.textContent = `🧮 You are ${years} years, ${months} months, and ${days} days old.`;
+
+      // 🎉 Confetti for birthday
+      if (today.getDate() === birthDay && today.getMonth() === birthMonth) {
+        confetti();
+        extraInfo.innerHTML = `<strong>🎉 Happy Birthday!</strong>`;
+      } else {
+        extraInfo.innerHTML = `
+          🪐 Your Zodiac sign is <strong>${getZodiac(birthDay, birthMonth)}</strong> <br>
+          📅 You were born on a <strong>${birthDate.toLocaleDateString('en-US', { weekday: 'long' })}</strong>.
+        `;
+      }
+
+      // 📊 Progress to next birthday
+      const nextBirthday = new Date(today.getFullYear(), birthMonth, birthDay);
+      if (nextBirthday < today) {
+        nextBirthday.setFullYear(today.getFullYear() + 1);
+      }
+      const diff = nextBirthday - today;
+      const total = 1000 * 60 * 60 * 24 * 365;
+      const progress = 100 - Math.round((diff / total) * 100);
+      progressFill.style.width = progress + "%";
+    }
+
+    function getZodiac(day, month) {
+      const zodiacSigns = [
+        ["Capricorn", 19], ["Aquarius", 18], ["Pisces", 20],
+        ["Aries", 19], ["Taurus", 20], ["Gemini", 20],
+        ["Cancer", 22], ["Leo", 22], ["Virgo", 22],
+        ["Libra", 22], ["Scorpio", 21], ["Sagittarius", 21]
+      ];
+
+      return day <= zodiacSigns[month][1]
+        ? zodiacSigns[month][0]
+        : zodiacSigns[(month + 1) % 12][0];
+    }
+  </script>
+</body>
+</html>

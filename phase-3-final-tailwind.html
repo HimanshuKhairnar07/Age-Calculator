@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multilingual Age Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-800 transition-all duration-300" id="body">
+  <div class="max-w-xl mx-auto my-10 p-6 bg-white rounded-xl shadow-md">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold" data-key="title">Age Calculator</h1>
+      <select id="lang" class="border p-1 rounded" onchange="setLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="hi">हिंदी</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
+
+    <label class="block mb-2" data-key="name">Name</label>
+    <input type="text" id="name" class="w-full p-2 border rounded mb-4" placeholder="Your Name">
+
+    <label class="block mb-2" data-key="gender">Gender</label>
+    <select id="gender" class="w-full p-2 border rounded mb-4">
+      <option value="">--</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <label class="block mb-2" data-key="dob">Date of Birth</label>
+    <input type="date" id="birthdate" class="w-full p-2 border rounded mb-4">
+
+    <div class="flex gap-2 mb-4">
+      <button onclick="calculateAge()" class="bg-blue-500 text-white px-4 py-2 rounded" data-key="calculate">Calculate</button>
+      <button onclick="exportPDF()" class="bg-green-500 text-white px-4 py-2 rounded" data-key="export">Export PDF</button>
+    </div>
+
+    <div id="result" class="text-lg font-semibold mt-2"></div>
+    <div id="extraInfo" class="text-sm text-gray-700 mt-2"></div>
+
+    <div class="mt-4">
+      <label class="text-sm font-medium">🎯 <span data-key="progress">Progress to next birthday:</span></label>
+      <div class="w-full h-3 bg-gray-200 rounded overflow-hidden">
+        <div id="progress-fill" class="h-full bg-blue-400" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div id="funFact" class="mt-4 text-sm text-green-700"></div>
+  </div>
+
+  <script>
+    const translations = {
+      en: {
+        title: "Age Calculator",
+        name: "Name",
+        gender: "Gender",
+        dob: "Date of Birth",
+        calculate: "Calculate",
+        export: "Export PDF",
+        progress: "Progress to next birthday:"
+      },
+      hi: {
+        title: "आयु कैलकुलेटर",
+        name: "नाम",
+        gender: "लिंग",
+        dob: "जन्म तिथि",
+        calculate: "गणना करें",
+        export: "PDF निर्यात करें",
+        progress: "अगले जन्मदिन तक प्रगति"
+      },
+      es: {
+        title: "Calculadora de Edad",
+        name: "Nombre",
+        gender: "Género",
+        dob: "Fecha de Nacimiento",
+        calculate: "Calcular",
+        export: "Exportar PDF",
+        progress: "Progreso al próximo cumpleaños"
+      }
+    };
+
+    function setLanguage(lang) {
+      document.querySelectorAll('[data-key]').forEach(el => {
+        el.textContent = translations[lang][el.getAttribute('data-key')];
+      });
+      localStorage.setItem('lang', lang);
+    }
+
+    function getZodiac(day, month) {
+      const zodiac = [
+        ["Capricorn", 19], ["Aquarius", 18], ["Pisces", 20],
+        ["Aries", 19], ["Taurus", 20], ["Gemini", 20],
+        ["Cancer", 22], ["Leo", 22], ["Virgo", 22],
+        ["Libra", 22], ["Scorpio", 21], ["Sagittarius", 21]
+      ];
+      return day <= zodiac[month][1] ? zodiac[month][0] : zodiac[(month + 1) % 12][0];
+    }
+
+    function calculateAge() {
+      const name = document.getElementById("name").value.trim();
+      const gender = document.getElementById("gender").value;
+      const birthdate = document.getElementById("birthdate").value;
+      const result = document.getElementById("result");
+      const extraInfo = document.getElementById("extraInfo");
+      const fill = document.getElementById("progress-fill");
+      const funFact = document.getElementById("funFact");
+
+      if (!name || !gender || !birthdate) {
+        alert("Please fill all fields.");
+        return;
+      }
+
+      const today = new Date();
+      const bDate = new Date(birthdate);
+      let y = today.getFullYear() - bDate.getFullYear();
+      let m = today.getMonth() - bDate.getMonth();
+      let d = today.getDate() - bDate.getDate();
+      if (d < 0) { m--; d += 30; }
+      if (m < 0) { y--; m += 12; }
+
+      result.textContent = `👤 ${name}, you are ${y} years, ${m} months, ${d} days old.`;
+
+      const zodiac = getZodiac(bDate.getDate(), bDate.getMonth());
+      const weekday = bDate.toLocaleDateString('en-US', { weekday: 'long' });
+      extraInfo.innerHTML = `🪐 Zodiac: <b>${zodiac}</b><br>📅 Born on a <b>${weekday}</b>`;
+
+      const nextBD = new Date(today.getFullYear(), bDate.getMonth(), bDate.getDate());
+      if (nextBD < today) nextBD.setFullYear(today.getFullYear() + 1);
+      const totalDays = 365;
+      const daysLeft = Math.ceil((nextBD - today) / (1000 * 60 * 60 * 24));
+      const progress = 100 - Math.round((daysLeft / totalDays) * 100);
+      fill.style.width = `${progress}%`;
+
+      if (today.getDate() === bDate.getDate() && today.getMonth() === bDate.getMonth()) {
+        confetti();
+        extraInfo.innerHTML += `<br>🎉 Happy Birthday!`;
+      }
+
+      funFact.textContent = `🎈 Did you know? You share your birthday with Albert Einstein!`;
+    }
+
+    async function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text(document.getElementById('result').textContent, 10, 10);
+      doc.text(document.getElementById('extraInfo').textContent, 10, 20);
+      doc.save("age-details.pdf");
+    }
+
+    window.onload = () => {
+      const lang = localStorage.getItem('lang') || 'en';
+      setLanguage(lang);
+      document.getElementById('lang').value = lang;
+    }
+  </script>
+</body>
+
+</html>

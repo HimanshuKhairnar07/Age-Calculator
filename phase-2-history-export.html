@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Age Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #4caf50;
+      color: white;
+      cursor: pointer;
+    }
+
+    #result, #extraInfo {
+      margin-top: 10px;
+      font-size: 15px;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #4caf50;
+      color: white;
+    }
+
+    .progress-container {
+      margin: 10px 0;
+    }
+
+    .progress-bar {
+      height: 10px;
+      background: #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #4caf50;
+      width: 0%;
+      transition: width 1s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎂 Advanced Age Calculator</h1>
+
+    <label>Name</label>
+    <input type="text" id="name" placeholder="Enter your name" />
+
+    <label>Gender</label>
+    <select id="gender">
+      <option value="">Select</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <label>Date of Birth</label>
+    <input type="date" id="birthdate" />
+
+    <button onclick="calculateAge()">Calculate Age</button>
+    <button onclick="exportPDF()">Export as PDF</button>
+
+    <div id="result"></div>
+    <div id="extraInfo"></div>
+
+    <div class="progress-container">
+      <div>🎯 Progress to next birthday:</div>
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <h3>📝 History</h3>
+    <table id="historyTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Gender</th>
+          <th>Age</th>
+          <th>Zodiac</th>
+          <th>Weekday</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const nameInput = document.getElementById("name");
+    const genderInput = document.getElementById("gender");
+    const birthdateInput = document.getElementById("birthdate");
+    const resultDiv = document.getElementById("result");
+    const extraInfo = document.getElementById("extraInfo");
+    const progressFill = document.getElementById("progress-fill");
+    const tableBody = document.querySelector("#historyTable tbody");
+
+    window.onload = () => {
+      showHistory();
+    };
+
+    function calculateAge() {
+      const name = nameInput.value.trim();
+      const gender = genderInput.value;
+      const birthdate = birthdateInput.value;
+
+      if (!name || !gender || !birthdate) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      const today = new Date();
+      const birthDate = new Date(birthdate);
+      const bDay = birthDate.getDate();
+      const bMonth = birthDate.getMonth();
+      const bYear = birthDate.getFullYear();
+
+      let years = today.getFullYear() - bYear;
+      let months = today.getMonth() - bMonth;
+      let days = today.getDate() - bDay;
+
+      if (days < 0) {
+        months--;
+        days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+      }
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+
+      const ageStr = `${years} years, ${months} months, ${days} days`;
+
+      resultDiv.innerHTML = `🧮 ${name}, you are ${ageStr} old.`;
+
+      if (today.getDate() === bDay && today.getMonth() === bMonth) {
+        confetti();
+        extraInfo.innerHTML = `<strong>🎉 Happy Birthday, ${name}!</strong>`;
+      } else {
+        const zodiac = getZodiac(bDay, bMonth);
+        const weekday = birthDate.toLocaleDateString('en-US', { weekday: 'long' });
+        extraInfo.innerHTML = `🪐 Your Zodiac sign: <strong>${zodiac}</strong><br>📅 You were born on a <strong>${weekday}</strong>.`;
+        updateHistory(name, gender, ageStr, zodiac, weekday);
+      }
+
+      // progress bar
+      const nextBirthday = new Date(today.getFullYear(), bMonth, bDay);
+      if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
+      const daysRemaining = Math.round((nextBirthday - today) / (1000 * 60 * 60 * 24));
+      const progress = Math.round((365 - daysRemaining) / 365 * 100);
+      progressFill.style.width = progress + "%";
+    }
+
+    function getZodiac(day, month) {
+      const zodiac = [
+        ["Capricorn", 19], ["Aquarius", 18], ["Pisces", 20],
+        ["Aries", 19], ["Taurus", 20], ["Gemini", 20],
+        ["Cancer", 22], ["Leo", 22], ["Virgo", 22],
+        ["Libra", 22], ["Scorpio", 21], ["Sagittarius", 21]
+      ];
+      return day <= zodiac[month][1]
+        ? zodiac[month][0]
+        : zodiac[(month + 1) % 12][0];
+    }
+
+    function updateHistory(name, gender, age, zodiac, weekday) {
+      const history = JSON.parse(localStorage.getItem("ageHistory")) || [];
+      history.unshift({ name, gender, age, zodiac, weekday });
+      localStorage.setItem("ageHistory", JSON.stringify(history));
+      showHistory();
+    }
+
+    function showHistory() {
+      const history = JSON.parse(localStorage.getItem("ageHistory")) || [];
+      tableBody.innerHTML = "";
+      history.slice(0, 5).forEach(entry => {
+        const row = `<tr>
+          <td>${entry.name}</td>
+          <td>${entry.gender}</td>
+          <td>${entry.age}</td>
+          <td>${entry.zodiac}</td>
+          <td>${entry.weekday}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    async function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Age Calculator Result", 10, 10);
+      doc.text(resultDiv.textContent, 10, 20);
+      doc.text(extraInfo.textContent.replaceAll('\n', ''), 10, 30);
+      doc.save("Age-Result.pdf");
+    }
+  </script>
+</body>
+</html>
